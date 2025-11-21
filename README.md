@@ -22,7 +22,7 @@ Develop a C++ class `act_controller` with the following public interface:
   - Moves in the positive direction for positive `magnitude`.  
   - Moves in the negative direction for negative `magnitude`.
 
-- `move_absolute(int position, int speed)`  
+- `move_absolute(int position)`  
   - Automatically moves to the specified absolute `position`.
 
 - `bool is_connected()`  
@@ -39,7 +39,7 @@ Develop a C++ class `act_controller` with the following public interface:
   - The function waits until the actuator reaches the target position before returning.  
   - If the actuator does not reach the target within `timeout` seconds, it returns an error.
 
-- `move_absolute_blocking(int position, int speed, int timeout)`  
+- `move_absolute_blocking(int position, int timeout)`  
   - Automatically moves to the specified absolute `position`.  
   - The function waits until the actuator reaches the target position before returning.  
   - If the actuator does not reach the target within `timeout` seconds, it returns an error.
@@ -131,4 +131,5 @@ public:
     const std::string& get_port_name() const;
 };
 ```
+
 
