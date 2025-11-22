@@ -321,18 +321,34 @@ public:
 
     // Move to absolute position (units in same external unit as get_current_position()).
     // Internally scale by 100 to device units (big-endian 16-bit).
-    void move_absolute(int position) {
+    void move_absolute(int position, int speed = 10) {
         if (!connected_) return;
+        // clamp speed
+        if (speed < 1) speed = 1;
+        // else if (speed > 30) speed = 30;
+        unsigned char speed_hi = static_cast<unsigned char>((speed >> 8) & 0xFF);
+        unsigned char speed_lo = static_cast<unsigned char>(speed & 0xFF);
 
         int scaled = position * 100;
         if (scaled < 0) scaled = 0;
         if (scaled > 0xFFFF) scaled = 0xFFFF;
-
         uint16_t abs_mov_u16 = static_cast<uint16_t>(scaled);
         unsigned char abs_hi = static_cast<unsigned char>((abs_mov_u16 >> 8) & 0xFF);
         unsigned char abs_lo = static_cast<unsigned char>(abs_mov_u16 & 0xFF);
 
-        // Build base, append hi/lo, then CRC (low, high)
+        // speed frame: 01 10 04 11 00 01 02 <speed_hi> <speed_lo> CRC(lo,hi)
+        std::vector<unsigned char> speed_frame = {
+            0x01, 0x10, 0x04, 0x11, 0x00, 0x01, 0x02, speed_hi, speed_lo
+        };
+        {
+            uint16_t crc = crc16_modbus(speed_frame.data(), speed_frame.size());
+            speed_frame.push_back(static_cast<unsigned char>(crc & 0xFF));
+            speed_frame.push_back(static_cast<unsigned char>((crc >> 8) & 0xFF));
+            asio::write(port_, asio::buffer(speed_frame.data(), speed_frame.size()));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        // position frame (unchanged logic)
         std::vector<unsigned char> frame = {
             0x01, 0x10, 0x04, 0x12, 0x00, 0x02, 0x04, 0x00, 0x00
         };  
@@ -554,8 +570,10 @@ public:
 
     // Blocking variant: same as move_absolute, but waits until target reached or timeout (seconds).
     // Returns 0 on success, non-zero on timeout/invalid input; tolerance specifies acceptable position error.
-    int move_absolute_blocking(int position, int timeout_sec, int tolerance = 1) {
+    int move_absolute_blocking(int position, int speed, int timeout_sec, int tolerance = 1) {
         if (!connected_ || timeout_sec <= 0) return 1;
+        if (speed < 1) speed = 1;
+        // else if (speed > 30) speed = 30; // (unclamped upper if intentional)
 
         // Compute expected target (external units) with same clamp/scale as move_absolute
         int scaled = position * 100;
@@ -563,8 +581,7 @@ public:
         if (scaled > 0xFFFF) scaled = 0xFFFF;
         const int expected = static_cast<int>((scaled + 50) / 100); // rounded to nearest ext unit
 
-        // Send the same motion as move_absolute
-        move_absolute(position);
+        move_absolute(position, speed);
 
         // Poll until target reached or timeout
         using namespace std::chrono;
@@ -865,6 +882,7 @@ static void stress_test_move_absolute_blocking(act_controller& ctrl,
 
     std::mt19937 rng(static_cast<unsigned int>(steady_clock::now().time_since_epoch().count()));
     std::uniform_int_distribution<int> target_dist(min_pos, max_pos);
+    std::uniform_int_distribution<int> spd_dist(1, 30); // added
 
     int pass = 0, fail = 0;
     for (int i = 0; i < iterations; ++i) {
@@ -873,8 +891,8 @@ static void stress_test_move_absolute_blocking(act_controller& ctrl,
 
         // Convert ms to seconds (ceil), minimum 1s
         int timeout_sec = std::max(1, (settle_timeout_ms + 999) / 1000);
-
-        int rc = ctrl.move_absolute_blocking(expected, timeout_sec, tolerance);
+        int speed = spd_dist(rng); // added
+        int rc = ctrl.move_absolute_blocking(expected, speed, timeout_sec, tolerance);
 
         // Verify final position
         int actual = ctrl.get_current_position();
@@ -969,7 +987,7 @@ int main() {
         std::cerr << "Failed to connect" << std::endl;
         return 1;
     }
-        ctrl.reset();
+        // ctrl.reset();
 
 
 
@@ -979,7 +997,7 @@ int main() {
     int p0 = ctrl.get_current_position();
     std::cout << "Current: " << p0 << std::endl;
     
-    ctrl.move_relative_blocking(5, 20, 120, 0);
+    ctrl.move_absolute_blocking(50, 100, 120, 0);
    // Allow motion to settle before reading (was 100 ms)
    std::this_thread::sleep_for(std::chrono::milliseconds(700));
    int p1 = ctrl.get_current_position();
