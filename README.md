@@ -96,7 +96,7 @@ Linux: /dev/ttyUSB[0..9], /dev/ttyS[0..31], /dev/tty[0..63]
 - Exceptions caught broadly, connection resets port state.
 - CRC mismatches or malformed frames → ignored, return safe defaults (e.g. position 0).
 
-## Stress Test Facilities
+## Stress Testing Facilities
 - stress_test_move_relative_blocking
 - stress_test_move_relative
 - stress_test_move_absolute_blocking
@@ -131,6 +131,7 @@ public:
     const std::string& get_port_name() const;
 };
 ```
+
 
 
 
