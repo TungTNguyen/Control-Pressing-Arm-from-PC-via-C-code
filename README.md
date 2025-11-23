@@ -54,7 +54,7 @@ Encapsulates Modbus-RTU style serial communication with a motion controller on W
 - Position polling with CRC validation.
 - Stress tests (randomized movement & connect/disconnect).
 
-## Connection Flow
+## Serial Communication (Connection Flow)
 1. Preferred port chosen:
    - Windows: explicit user port or default COM7.
    - Linux: explicit user port or default /dev/ttyUSB0.
@@ -131,6 +131,7 @@ public:
     const std::string& get_port_name() const;
 };
 ```
+
 
 
 
