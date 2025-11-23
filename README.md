@@ -62,7 +62,7 @@ Encapsulates Modbus-RTU style serial communication with a motion controller on W
 3. Initialization sequence: multiple 01 03 and 01 05 frames (read/write setup registers).
 4. If preferred fails, scan candidate list (platform-specific) until first valid responsive port.
 
-## CRC & Frames
+## Checksum (CRC & Frames)
 - CRC16 Modbus (poly 0xA001), appended low-byte then high-byte.
 - All motion/parameter frames built in big-endian for 16-bit quantities (position scaled by 100).
 
@@ -131,5 +131,6 @@ public:
     const std::string& get_port_name() const;
 };
 ```
+
 
 
