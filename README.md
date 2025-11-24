@@ -74,7 +74,7 @@ Encapsulates Modbus-RTU style serial communication with a motion controller on W
   - move_relative_blocking(int magnitude, int speed, int timeout_sec, int tolerance = 1)
   - move_absolute_blocking(int position, int timeout_sec, int tolerance = 1)
 - Positive relative uses 0x00 0x00; negative uses 0xFF 0xFF marker bytes before magnitude.
-- Trigger frame (start execution) and optional tail frame (reset coil) follow main write frame.
+- Trigger frame (start execution) and optional tail frame (reset coil) follow the main write frame.
 
 ## Position
 Request: 01 03 90 00 00 10 69 06
@@ -89,12 +89,12 @@ Response parsing:
 - Drain function clears residual bytes before a fresh position read.
 
 ## Cross-Platform Port Enumeration
-Windows: COM1..COM32
-Linux: /dev/ttyUSB[0..9], /dev/ttyS[0..31], /dev/tty[0..63]
+Windows: COM1..COM32. For example, in my labmate's laptop, COM5-7.
+Linux: /dev/ttyUSB[0..9], /dev/ttyS[0..31], /dev/tty[0..63]. Most of the time, it is /dev/ttyUSB0.
 
 ## Error Handling
 - Exceptions caught broadly, connection resets port state.
-- CRC mismatches or malformed frames → ignored, return safe defaults (e.g. position 0).
+- CRC mismatches or malformed frames → ignored, return safe defaults (e.g., position 0).
 
 ## Stress Testing Facilities
 - stress_test_move_relative_blocking
@@ -131,6 +131,7 @@ public:
     const std::string& get_port_name() const;
 };
 ```
+
 
 
 
